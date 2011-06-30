@@ -1,0 +1,33 @@
+<!doctype html>
+<html>
+  <head>
+    <script src="emoticon.js"></script>
+    <style>
+      #code {
+        width:500px;
+        height:300px;
+      }
+    </style>
+  </head>
+  <body>
+    <textarea id="code" >hello world :-Q S:-P :-Q</textarea>
+    <button id="parse" onclick="parse()">parse</button>
+    <div id="out"></div>
+    <script>
+      var txt = document.getElementById('code');
+      var out = document.getElementById('out');
+       function parse() {
+        console.time('a')
+        var x = new Emoticon.Parser(txt.value)
+        console.log(x.toString())
+        run(x)
+        console.timeEnd('a')
+      }
+      toPrint = [];
+      function run(x){
+        i = new Emoticon.Interpreter(x, function(x){toPrint.push(x)})
+        i.run()
+      }
+    </script>
+  </body>
+</html>
