@@ -43,21 +43,31 @@ class Parser
 class Interpreter
   constructor: (source, @print) ->
     source.unshift 'START'
+    # Emoticon environment consists of a set of named lists
     @lists =
+      # The instruction pointer.
       X: [1]
+      # The source code.
       Z: source
+      # The current list name.
       A: [':']
+      # The list of set markers.
       G: []
+      # A list of a single space
       S: [' ']
+      # An empty list
       E: []
+      # The default list
       ':': []
   
-  debug: ->
+  debug: (logger)->
+    logger ?= (x)->console.log x
     log = ''
     for i,v of @lists
       log += "\n#{i}: " + v.toString()
-    console.log log
-      
+    logger log
+  
+  # Returns the closest block divider or closer from a specified index in the source list
   closestDivideOrClose: (index) ->
     list = @lists['Z']
     while index < list.length
@@ -69,38 +79,44 @@ class Interpreter
       index++
     return infinity
   
+  # Returns the closest block divider
   closestDivide: (index) ->
     list = @lists['Z']
     while index < list.length
       if list[index].mouth == ')' then return index
       index++
     return infinity
-    
+  
+  # Returns the leftmost item of the given list name  
   left: (listName) -> @lists[listName][0]
   
+  # Returns the rightmost item of the given list name
   right: (listName) -> @lists[listName][@lists[listName].length]
   
+  # Puts a single data item to the right of the geven list name
   putRight: (listName, dataItem) -> @lists[listName].push dataItem
   
+  # Puts a single item to the left of the data
   putLeft: (listName, dataItem) -> @lists[listName].unshift dataItem
   
+  # Retunrs the name of the current list
   currentList: -> @left 'A'
   
+  # Clones a list
   clone: (listName) -> 
     list = @lists[listName]
-    newList = []
-    newList[i] = v for v,i in list
-    console.log newList, list
-    return newList
+    return list.map((x)->x) if list.map?
+    v for v in list
   
   run: ->
     cont = true
     i = 0
-    while cont and i < 200
+    while cont
       i++
       @debug()
       cont = @step() 
   
+  # Executes the instruction in Z at the number in X
   step: ->
     console.log 'step', @left 'X'
     instruction = @lists['Z'][@left 'X']
@@ -111,49 +127,68 @@ class Interpreter
       @lists['X'][0]++
     else if instruction.type == 'emoticon'
       @lists['X'][0]++
-      @execute instruction
+      return @execute instruction
     return true
+  
+  # Executes a single instruction, returns false to 
   execute: (instruction) ->
     mouth = instruction.mouth
     nose = instruction.nose
     face = instruction.face
     
     if face.length == 1 and face[0] == ':'
+      # The face is just the default list.
       list = @lists[':']
     else if face.length == 2 and face[1] == ':' and face[0] of @lists
+      # The face is an environment list.
       face = face[0]
       list = @lists[face]
     else
+      # The face is a user defined list.
       if not @lists[face]
         list = @lists[face] = []
       else
         list = @lists[face]
       
     switch mouth
+      # Set the Current list to the face.
       when 'O'
         @lists['A'][0] = face
+        
+      # Put the count of this list at the left of the current list.
       when 'C'
         @lists[@currentList()].unshift list.length
+        
+      # Moves the left of the current list to the left of this left.
       when '<'
         @putLeft face, @lists[@currentList()].shift()
-        console.log face, list, @lists[@currentList()].toString()
+        
+      # left to the left.
       when '>'
         @putRight face, @lists[@currentList()].pop()
+        
+      # Copies the left of the currentList to this list.
       when '['
-        @putLeft face, @lists[@currentList()][0]
+        @putLeft face, @left(@currentList())
       when ']'
-        @putRight face, @lists[@currentList()][@lists[@currentList()].length - 1]
+        @putRight face, @right(@currentList())
+      
+      # Replacees/Inserts the contents of the current list in this list.
+      # Arguments taken from the right of the default list.
       when 'V'
-        insertIndex = @lists[':'].shift()
         numToReplace = @lists[':'].shift()
-        currentList = @lists[@currentList()]
+        insertIndex = @lists[':'].shift()
+        currentList = @clone @currentList()
         while currentList.length
            item = currentList.shift()
-           isReplace = if numToReplace then 1 else 0
+           isReplace = if numToReplace > 0 then 1 else 0
+           console.log numToReplace
            numToReplace--
            replaced = list.splice insertIndex, isReplace, item
            insertIndex++
-           leftAppend @currentList(), replaced[0]
+           @putLeft ':', replaced[0]
+      
+
       when 'D'
         @lists[face] = list = @clone @currentList()
         console.log(list.toString(), face)
@@ -218,6 +253,8 @@ class Interpreter
           @lists['X'][0] = @closestDivideOrClose(@lists['X'][0]) + 1
           console.log @lists['X'][0]
         if mouth == 'E' and condition == 'TRUE' or condition == 'FALSE' then @lists[':'].shift()
+    
+    return true
 
 window.Emoticon = {
   Parser,
