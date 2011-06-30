@@ -52,10 +52,20 @@ class Interpreter
       E: []
       ':': []
   
+  debug: ->
+    log = ''
+    for i,v of @lists
+      log += "\n#{i}: " + v.toString()
+    console.log log
+      
   closestDivideOrClose: (index) ->
     list = @lists['Z']
     while index < list.length
-      if list[index].mouth == ')' or list[index].mouth == '|' then return index
+      if list[index].mouth == ')' 
+        return index
+      else if list[index].mouth == '|'
+        @lists['G'][0] = 'IF'
+        return index
       index++
     return infinity
   
@@ -86,8 +96,9 @@ class Interpreter
   run: ->
     cont = true
     i = 0
-    while cont and i < 100
+    while cont and i < 200
       i++
+      @debug()
       cont = @step() 
   
   step: ->
@@ -122,7 +133,7 @@ class Interpreter
       when 'O'
         @lists['A'][0] = face
       when 'C'
-        @lists[@currentList()] = list.length
+        @lists[@currentList()].unshift list.length
       when '<'
         @putLeft face, @lists[@currentList()].shift()
         console.log face, list, @lists[@currentList()].toString()
@@ -156,14 +167,15 @@ class Interpreter
       when '7'
         tmp = []
         tmp.push v for v in list.shift().split ''
-        list.unshift tmp
+        @lists[face] = list = tmp.concat list
       when 'L'
         tmp = []
         tmp.push v for v in list.pop().split ''
-        list.push tmp
+        @lists[face] = list.concat tmp
       when '#'
         count = @lists[@currentList()][0]
-        tmp = list.splice 0, count
+        tmp = if isNaN(count) then list.splice 0, list.length else list.splice 0, count
+        console.log tmp.toString()
         tmp = if nose == '~' then tmp.join ' ' else tmp.join ''
         list.unshift tmp
       when '$'
@@ -191,12 +203,15 @@ class Interpreter
           when '>' then put operand1 > operand2
           when '<' then put operand1 < operand2
           when '~' then put operand1 != operand2
+        console.log @lists[':'].toString()
       when '('
-        @lists['G'].push @lists['X'][0]
+        @lists['G'].push @lists['X'][0] - 1
       when ')'
-        @lists['X'][0] = @lists['G'][@lists['G'].length - 1]
+        marker = @lists['G'].pop()
+        nextInstruction = if marker == 'IF' then @lists['X'][0] + 1 else marker
+        @lists['X'][0] = nextInstruction
       when '|'
-        @lists['X'][0] = @closestDivide @lists['X'][0]
+        @lists['X'][0] = @closestDivide(@lists['X'][0]) + 1
       when '3', 'E'
         condition = @left(':')
         if condition == 'TRUE'
