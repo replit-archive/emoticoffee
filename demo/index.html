@@ -1,9 +1,17 @@
 <!doctype html>
 <html>
   <head>
-    <script src="emoticon.js"></script>
+    <script type="text/javascript" src="emoticon.js"></script>
     <style>
       #code {
+        width:500px;
+        height:300px;
+      }
+      #parsed {
+        width:500px;
+        height:300px;
+      }
+      #out {
         width:500px;
         height:300px;
       }
@@ -26,17 +34,17 @@
         not_printed  ** insertion point for new code   **
         S:-P
         printed :-Q</textarea>
-    <button id="parse" onclick="parse()">parse</button>
-    <div id="out"></div>
+    <button id="parse" onclick="execute()">execute</button>
+    <textarea id="parsed"></textarea>
+    <textarea id="out"></textarea>
     <script>
       var txt = document.getElementById('code');
       var out = document.getElementById('out');
-       function parse() {
-        console.time('a')
-        var x = new Emoticon.Parser(txt.value)
-        console.log(x.toString())
-        run(x)
-        console.timeEnd('a')
+      var parsed = document.getElementById('parsed')
+       function execute() {
+        var source = new Emoticon.Parser(txt.value);
+        parsed.value = source.toString();
+        run(source);
       }
       toPrint = [];
       function run(x){
@@ -44,7 +52,13 @@
           source: x,
           print: function(o) {alert(o);},
           input: function(cb) {cb(prompt('input'))},
-          result: function(res) {console.log(res)}
+          result: function(lists) {
+            var txt = ''
+            for (var list in lists) {
+              txt += '\n' + list + ': ' + lists[list].toString();
+            }
+            out.value = txt;
+          }
         }
         i = new Emoticon.Interpreter(config);
         i.run()
