@@ -1,0 +1,59 @@
+<!doctype html>
+<html>
+  <head>
+    <script src="emoticon.js"></script>
+    <script src="tests.js"></script>
+    <style>
+      #code {
+        width:500px;
+        height:300px;
+      }
+    </style>
+  </head>
+  <body>
+    <textarea id="code" >hello world :-Q S:-P :-Q</textarea>
+    <button id="parse" onclick="parse()">parse</button>
+    <div id="out"></div>
+    <script>
+    
+    var assert = (function () {
+      var test;
+      var assert = function (condition, message) {
+        if (!message) {
+          test = condition;
+          return assert;
+        }
+        if (condition) return condition;
+        throw new Error("Test " + test + " failed\n" + message);
+       };
+      return assert;
+    })();
+    
+    var compare = function (testEnv, resultEnv) {
+      
+      for (var list in testEnv)
+        assert(list in resultEnv, "List " + list + " missing from result" );
+  
+      for (list in resultEnv) {
+        assert(list in testEnv, "List " + list + " missing from test");
+        for (var i = 0; i < resultEnv[list].length; i++) {
+          assert(resultEnv[list][i] == testEnv[list][i], "AssertEquals failed at element " + i + " in list " + list);
+        }
+      }
+    };
+    
+    var test, ins, lists;
+    for (var testName in Emoticon.Tests.prototype) {
+      tests = Emoticon.Tests.prototype[testName]()
+      for (var i = 0; i < tests.length; i++) {
+        interpreter = new Emoticon.Interpreter({source:new Emoticon.Parser(tests[i].code), print:function(x){console.warn(x)}});
+        lists = interpreter.run()
+        assert = assert(testName);
+        console.log(lists)
+        compare(tests[i].result, lists);
+      }
+    }
+
+    </script>
+  </body>
+</html>
