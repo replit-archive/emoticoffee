@@ -10,7 +10,22 @@
     </style>
   </head>
   <body>
-    <textarea id="code" >hello world :-Q S:-P :-Q</textarea>
+    <textarea id="code" >** set up the operator we want to insert **
+        8-O : - Q
+        $:-O 3 8-$   ** implode the characters we read **
+
+    ** preform the insert **
+        E:-O :D      ** clear the : list                                    **
+        :-O 0        ** load the length for the splice, 0 means just insert **
+        X:-O :-]     ** use prog counter to get the location for the splice **
+        :-O 8 :+}    ** increment splice location by offset to location (8) **
+        8-O Z:-V      ** actually do the splice                              **
+
+    ** continue after insert **
+        :-O 
+        not_printed  ** insertion point for new code   **
+        S:-P
+        printed :-Q</textarea>
     <button id="parse" onclick="parse()">parse</button>
     <div id="out"></div>
     <script>
@@ -25,7 +40,13 @@
       }
       toPrint = [];
       function run(x){
-        i = new Emoticon.Interpreter(x, function(x){toPrint.push(x)})
+        var config = {
+          source: x,
+          print: function(o) {alert(o);},
+          input: function(cb) {cb(prompt('input'))},
+          result: function(res) {console.log(res)}
+        }
+        i = new Emoticon.Interpreter(config);
         i.run()
       }
     </script>

@@ -5,11 +5,14 @@ class Instruction
       @mouth = emoticon.pop()
       @nose = emoticon.pop()
       @face = emoticon.join ''
+      if @face == ''
+        @face = @nose
+        @nose = null
    toString : -> @value
       
 class Parser
   constructor: (code) ->
-    rEmoticon = /^([^\s]+[^\s][OC<>\[\]VD@PQ7L#${}\\\/()|3E])\s*/
+    rEmoticon = /^([^\s]+[OC<>\[\]VD@PQ7L#${}\\\/()|3E*])\s*/
     rNumber = /^-?\d+/
     rSpace = /^[ \t\v]+/
     rNewLine = /^(\n)/
@@ -41,7 +44,7 @@ class Parser
     return source
 
 class Interpreter
-  constructor: (source, @print) ->
+  constructor: ({source, @print, @input, @result, @logger}) ->
     source.unshift 'START'
     # Emoticon environment consists of a set of named lists
     @lists =
@@ -60,12 +63,13 @@ class Interpreter
       # The default list
       ':': []
   
-  debug: (logger)->
-    logger ?= (x)->console.log x
+  debug: ()->
+    if not @logger? then return false
+    @logger "step #{@left 'X'}"
     log = ''
     for i,v of @lists
       log += "\n#{i}: " + v.toString()
-    logger log
+    @logger log
   
   # Returns the closest block divider or closer from a specified index in the source list
   closestDivideOrClose: (index) ->
@@ -91,7 +95,7 @@ class Interpreter
   left: (listName) -> @lists[listName][0]
   
   # Returns the rightmost item of the given list name
-  right: (listName) -> @lists[listName][@lists[listName].length]
+  right: (listName) -> @lists[listName][@lists[listName].length - 1]
   
   # Puts a single data item to the right of the geven list name
   putRight: (listName, dataItem) -> @lists[listName].push dataItem
@@ -111,23 +115,32 @@ class Interpreter
   run: ->
     cont = true
     i = 0
-    while cont
+    while cont and typeof cont != "function"
       i++
       @debug()
-      cont = @step() 
+      cont = @step()
+    
+    if typeof cont == "function"
+      cont()
+    else
+      @result? @lists
+    
+    return @lists
   
   # Executes the instruction in Z at the number in X
   step: ->
-    console.log 'step', @left 'X'
     instruction = @lists['Z'][@left 'X']
-    console.log(instruction)
     return false if not instruction
+    if not (instruction instanceof Instruction)
+      instruction = new Parser(instruction)[0]
+      
     if instruction.type == 'data'
       @putRight @currentList(), instruction.value
       @lists['X'][0]++
     else if instruction.type == 'emoticon'
+      ret = @execute instruction
       @lists['X'][0]++
-      return @execute instruction
+      return ret
     return true
   
   # Executes a single instruction, returns false to 
@@ -182,19 +195,17 @@ class Interpreter
         while currentList.length
            item = currentList.shift()
            isReplace = if numToReplace > 0 then 1 else 0
-           console.log numToReplace
            numToReplace--
            replaced = list.splice insertIndex, isReplace, item
            insertIndex++
-           @putLeft ':', replaced[0]
+           @putRight ':', replaced[0] if isReplace
       
 
       when 'D'
         @lists[face] = list = @clone @currentList()
-        console.log(list.toString(), face)
       when '@'
         numToRotate = @lists[@currentList()][0]
-        @rightAppend face, list.pop() for x in [numToRotate..1]
+        @putLeft face, list.pop() for x in [numToRotate..1]
       when 'P'
         @print list[0].toString()
       when 'Q'
@@ -210,11 +221,10 @@ class Interpreter
       when '#'
         count = @lists[@currentList()][0]
         tmp = if isNaN(count) then list.splice 0, list.length else list.splice 0, count
-        console.log tmp.toString()
         tmp = if nose == '~' then tmp.join ' ' else tmp.join ''
         list.unshift tmp
       when '$'
-        count = @lists[@currentList()][@lists[@currentList()].length]
+        count = @lists[@currentList()][@lists[@currentList()].length - 1]
         tmp = list.splice -count, count
         tmp = if nose == '~' then tmp.join ' ' else tmp.join ''
         list.push tmp
@@ -226,34 +236,38 @@ class Interpreter
         switch nose
           when '+' then put operand1 + operand2
           when '-' then put operand1 - operand2
-          when '*' then put operand1 * operand2
+          when 'x' then put operand1 * operand2
           when '/' then put operand1 / operand2
           when '\\' then put operand1 % operand2
       when '\\', '/'
         put = (item) => if mouth == '\\' then @lists[':'].unshift(item.toString().toUpperCase()) else @lists[':'].push(item.toString().toUpperCase())
-        operand1 = if mouth == '\\' then @left(@currentList()) else @right(@currentList())
-        operand2 = if mouth == '\\' then @left(face) else @right(face)
+        operand1 = if mouth == '\\' then @left @currentList() else @right @currentList()
+        operand2 = if mouth == '\\' then @left face else @right face
         switch nose
           when '=' then put operand1 == operand2
           when '>' then put operand1 > operand2
           when '<' then put operand1 < operand2
           when '~' then put operand1 != operand2
-        console.log @lists[':'].toString()
       when '('
-        @lists['G'].push @lists['X'][0] - 1
+        @lists['G'].push @lists['X'][0]
       when ')'
         marker = @lists['G'].pop()
-        nextInstruction = if marker == 'IF' then @lists['X'][0] + 1 else marker
+        nextInstruction = if marker == 'IF' then @lists['X'][0] else marker - 1
         @lists['X'][0] = nextInstruction
       when '|'
-        @lists['X'][0] = @closestDivide(@lists['X'][0]) + 1
+        @lists['X'][0] = @closestDivide(@lists['X'][0])
       when '3', 'E'
         condition = @left(':')
         if condition == 'TRUE'
-          @lists['X'][0] = @closestDivideOrClose(@lists['X'][0]) + 1
-          console.log @lists['X'][0]
+          @lists['X'][0] = @closestDivideOrClose(@lists['X'][0]) 
         if mouth == 'E' and condition == 'TRUE' or condition == 'FALSE' then @lists[':'].shift()
-    
+      when '*'
+        return ()=>
+          @input (result)=>
+            result = result.split /[ \t\v]+/
+            @putRight @currentList(), word for word in result
+            @run()
+        
     return true
 
 window.Emoticon = {
