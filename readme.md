@@ -2,7 +2,7 @@
 
 An [Emoticon v1.5](http://www.teuton.org/~stranger/code/emoticon/manual.php) language interpreter written in CoffeeScript.
 
-  :-O Hello World :-Q S:-P :-Q
+    :-O Hello World :-Q S:-P :-Q
   
 The only deviation from the original spec is the addition of the input operator `:-*`
 
