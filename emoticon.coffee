@@ -12,7 +12,7 @@ class Instruction
       
 class Parser
   constructor: (code) ->
-    rEmoticon = /^([^\s]+[OC<>\[\]VD@PQ7L#${}\\\/()|3E*])\s*/
+    rEmoticon = /^([^\s]+[OC<>\[\]VD@PQ7L#${}\\\/()|3E*])(\s|$)/
     rNumber = /^-?\d+/
     rSpace = /^[ \t\v]+/
     rNewLine = /^(\n)/
