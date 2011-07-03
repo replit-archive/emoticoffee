@@ -201,7 +201,7 @@
       face = instruction.face;
       AssertCount = __bind(function(count, listName) {
         if (this.lists[listName].length < count) {
-          throw new RuntimeError("List '" + listName + "' needs to have at least #" + count + " items  to execute " + instruction + " at " + (this.left('X')));
+          throw new RuntimeError("List '" + listName + "' needs to have at least #" + count + " items to execute " + instruction + " at " + (this.left('X')));
         }
       }, this);
       if (face.length === 1 && face[0] === ':') {
@@ -302,7 +302,7 @@
           list.unshift(tmp);
           break;
         case '$':
-          count = this.left(this.currentList());
+          count = this.left(currFace);
           tmp = list.splice(-count, count);
           tmp = nose === '~' ? tmp.join(' ') : tmp.join('');
           list.push(tmp);
@@ -396,7 +396,7 @@
               result = result.split(/[ \t\v]+/);
               for (_k = 0, _len3 = result.length; _k < _len3; _k++) {
                 word = result[_k];
-                this.putRight(this.currentList(), word);
+                this.putRight(currFace, word);
               }
               return this.run();
             }, this));

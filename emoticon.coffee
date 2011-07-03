@@ -62,8 +62,8 @@ class Parser
 #   Input is a key/value pair consists of :
 #     * @arg  source: (Array of instructions, or a String of code)
 #     * @arg  print: A function that would be called with any output from the program
-#     * @arg  input: A function that would be called when the program is asking for input.
-#                     The execution of the application would stop and 
+#     * @arg  input: A function that would be called when the program is asking for input. Would be passed a
+#                     function that would be called with the input to continue execution.
 #     * @arg  result: A function that would be called after the program has finished execution.
 #     *                It would be passed the evironment lists as an object.
 #     * @arg  logger: Optional, will be called after each step of execution with the current program state.
@@ -80,11 +80,11 @@ class Interpreter
       A: [':']
       # The list of set markers.
       G: []
-      # A list of a single space
+      # A list of a single space.
       S: [' ']
-      # An empty list
+      # An empty list.
       E: []
-      # The default list
+      # The default list.
       ':': []
   
   debug: ()->
@@ -286,7 +286,7 @@ class Interpreter
         tmp = if nose == '~' then tmp.join ' ' else tmp.join ''
         list.unshift tmp
       when '$'
-        count = @left @currentList()
+        count = @left currFace
         tmp = list.splice -count, count
         tmp = if nose == '~' then tmp.join ' ' else tmp.join ''
         list.push tmp
@@ -346,7 +346,7 @@ class Interpreter
         return ()=>
           @input (result)=>
             result = result.split /[ \t\v]+/
-            @putRight @currentList(), word for word in result
+            @putRight currFace, word for word in result
             @run()
         
     return true
