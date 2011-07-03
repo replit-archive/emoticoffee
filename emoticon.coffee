@@ -17,6 +17,10 @@ class Instruction
         @face = @nose
         @nose = null
    toString : -> @value
+   
+class RuntimeError extends Error
+  constructor: (@message) ->
+  name: 'RuntimeError'
 
 # Parses the original code into an array of instructions.
 class Parser
@@ -180,9 +184,9 @@ class Interpreter
     nose = instruction.nose
     face = instruction.face
     
-    AssertCount: (count, listName) ->
+    AssertCount = (count, listName) =>
       if @lists[listName].length < count
-        throw new Error("RuntimeError: List #{listName} needs to have at least ##{count} elements to execute #{instruction} at #{@left 'X'}")
+        throw new RuntimeError "List '#{listName}' needs to have at least ##{count} items to execute #{instruction} at #{@left 'X'}"
     
     if face.length == 1 and face[0] == ':'
       # The face is just the default list.
