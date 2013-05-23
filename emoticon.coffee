@@ -25,15 +25,22 @@ class RuntimeError extends Error
 # Parses the original code into an array of instructions.
 class Parser
   constructor: (code) ->
+    bObfuscatedMode = false;
     rEmoticon = /^([^\s]+[OC<>\[\]VD@PQ7L#${}\\\/()|3E*])(\s|$)/
     rNumber = /^-?\d+/
     rSpace = /^[ \t\v]+/
     rNewLine = /^(\n)/
     rComment = /^\*\*([^*]|\*[^*])*\*\*/
     rWord = /^([^\s]+)\s*/
+    rObfusc = /^\^_(_)?\^/
+    rMustache = /^[8|B|:][\)|\(|\[|\]][\-|`|~]/
     source = []
     while code
-      if match = code.match rSpace
+      if match = code.match rObfusc
+        # If there is an obfuscation switch
+        match = match[0]
+        bObfuscatedMode = !bObfuscatedMode
+      else if match = code.match rSpace
         match = match[0]
         # Do nothing
       else if match = code.match rNewLine
@@ -45,14 +52,22 @@ class Parser
         match = match[1]
         token = new Instruction match, 'emoticon'
         source.push token
-      else if match = code.match(rNumber)
+      else if match = code.match rMustache
         match = match[0]
-        token = new Instruction parseInt(match), 'data'
+        token = new Instruction match, 'mustache'
         source.push token
-      else if match = code.match(rWord)
-        match = match[1]
-        token = new Instruction match, 'data'
-        source.push token
+      else if bObfuscatedMode == false
+        if match = code.match(rNumber)
+          match = match[0]
+          token = new Instruction parseInt(match), 'data'
+          source.push token
+        else if match = code.match(rWord)
+          match = match[1]
+          token = new Instruction match, 'data'
+          source.push token
+      else if bObfuscatedMode == true
+        if match = code.match(rWord)
+          match = match[1]
       code = code[match.length...]
     return source
 
@@ -171,6 +186,11 @@ class Interpreter
       @putRight @currentList(), instruction.value
       @lists['X'][0]++
       
+    else if instruction.type == 'mustache'
+      @putRight  @currentList(), @parseMustache instruction.value
+      console.log(this.lists)
+      @lists['X'][0]++
+
     else if instruction.type == 'emoticon'
       ret = @execute instruction
       @lists['X'][0]++
@@ -178,6 +198,83 @@ class Interpreter
       
     return true
   
+  # Replace mustache face by a letter
+  parseMustache: (mustache) ->
+    switch mustache
+      when ':)`'
+        return 'a'
+      when '8)`'
+        return 'b'
+      when 'B)`'
+        return 'c'
+      when ':]`'
+        return 'd'
+      when '8]`'
+        return 'e'
+      when 'B]`'
+        return 'f'
+      when ':[`'
+        return 'g'
+      when '8[`'
+        return 'h'
+      when 'B[`'
+        return 'i'
+      when ':(`'
+        return 'j'
+      when '8(`'
+        return 'k'
+      when 'B(`'
+        return 'l'
+      when ':)-'
+        return 'm'
+      when '8)-'
+        return 'n'
+      when 'B)-'
+        return 'o'
+      when ':]-'
+        return 'p'
+      when '8]-'
+        return 'q'
+      when 'B]-'
+        return 'r'
+      when ':[-'
+        return 's'
+      when '8[-'
+        return 't'
+      when 'B[-'
+        return 'u'
+      when ':(-'
+        return 'v'
+      when '8(-'
+        return 'w'
+      when 'B(-'
+        return 'x'
+      when ':)~'
+        return 'y'
+      when '8)~'
+        return 'z'
+      when 'B)~'
+        return '0'
+      when ':]~'
+        return '1'
+      when '8]~'
+        return '2'
+      when 'B]~'
+        return '3'
+      when ':[~'
+        return '4'
+      when '8[~'
+        return '5'
+      when 'B[~'
+        return '6'
+      when ':(~'
+        return '7'
+      when '8(~'
+        return '8'
+      when 'B(~'
+        return '9'
+    return ''
+
   # Executes a single instruction, returns false to 
   execute: (instruction) ->
     mouth = instruction.mouth
