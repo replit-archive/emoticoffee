@@ -188,7 +188,6 @@ class Interpreter
       
     else if instruction.type == 'mustache'
       @putRight  @currentList(), @parseMustache instruction.value
-      console.log(this.lists)
       @lists['X'][0]++
 
     else if instruction.type == 'emoticon'
