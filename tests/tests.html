@@ -36,6 +36,7 @@
   
       for (list in resultEnv) {
         assert(list in testEnv, "List " + list + " missing from test");
+        assert(resultEnv[list].length === testEnv[list].length, "Must be same length");
         for (var i = 0; i < resultEnv[list].length; i++) {
           assert(resultEnv[list][i] == testEnv[list][i], "AssertEquals failed at element " + i + " in list " + list);
         }
@@ -49,10 +50,10 @@
         interpreter = new Emoticon.Interpreter({source:new Emoticon.Parser(tests[i].code), print:function(x){console.warn(x)}});
         lists = interpreter.run()
         assert = assert(testName);
-        console.log(lists)
         compare(tests[i].result, lists);
       }
     }
+    console.log("All tests passed");
 
     </script>
   </body>
