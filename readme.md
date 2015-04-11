@@ -12,7 +12,7 @@ The only deviation from the original spec is the addition of the input operator 
 #Usage
 
     var hello_world = ':-O Hello World :-Q S:-P :-Q';
-    var code = new Emoticon.Parser(hellow_world);
+    var code = new Emoticon.Parser(hello_world);
     config = {
       input: function (cb) {
         cb(window.prompt("input"));
